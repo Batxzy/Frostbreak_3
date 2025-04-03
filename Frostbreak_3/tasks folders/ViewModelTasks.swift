@@ -14,15 +14,14 @@ import Observation
 class ExerciseTimerViewModel {
     var exercises: [ExerciseTask] = []
     var currentExerciseIndex: Int = 0
-    var mainTimeRemaining: Int = 0
-    var shortTimeRemaining: Int = 0
+    var mainTimeRemaining: Int = 660 // 11 minutes total (fixed)
+    var shortTimeRemaining: Int = 60 // 1 minute per task
     var isTimerRunning: Bool = false
     var isPaused: Bool = false
     var hasStarted: Bool = false
     var showCompletionAlert: Bool = false
     
-    private var mainTimerPublisher: AnyCancellable?
-    private var shortTimerPublisher: AnyCancellable?
+    private var timerPublisher: AnyCancellable?
     
     init() {
         setupExercises()
@@ -43,10 +42,8 @@ class ExerciseTimerViewModel {
     }
     
     func resetTimers() {
-        if currentExerciseIndex < exercises.count {
-            mainTimeRemaining = exercises[currentExerciseIndex].timeInSeconds
-            shortTimeRemaining = 60 // 1 minute transition timer
-        }
+        // Reset only the short timer, main timer remains continuous
+        shortTimeRemaining = 60 // 1 minute per task
     }
     
     func startTimers() {
@@ -55,34 +52,42 @@ class ExerciseTimerViewModel {
         hasStarted = true
         isPaused = false
         
-        // Using DispatchQueue for better UI updates
-        mainTimerPublisher = Timer.publish(every: 1.0, on: .main, in: .common)
+        // Use a single timer for both countdowns
+        timerPublisher = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 
+                // Update both timers
                 if self.mainTimeRemaining > 0 {
                     self.mainTimeRemaining -= 1
-                } else {
-                    self.moveToNextExercise()
                 }
-            }
-        
-        shortTimerPublisher = Timer.publish(every: 1.0, on: .main, in: .common)
-            .autoconnect()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self = self else { return }
                 
                 if self.shortTimeRemaining > 0 {
                     self.shortTimeRemaining -= 1
+                } else {
+                    self.moveToNextExercise()
+                }
+                
+                // Check if overall session is complete
+                if self.mainTimeRemaining <= 0 {
+                    self.completeSession()
                 }
             }
     }
     
+    private func completeSession() {
+        timerPublisher?.cancel()
+        timerPublisher = nil
+        hasStarted = false
+        isPaused = false
+        showCompletionAlert = true
+    }
+    
     func pauseTimers() {
-        stopTimers()
+        timerPublisher?.cancel()
+        timerPublisher = nil
         isPaused = true
         isTimerRunning = false
     }
@@ -94,31 +99,17 @@ class ExerciseTimerViewModel {
     }
     
     func stopTimers() {
-        mainTimerPublisher?.cancel()
-        mainTimerPublisher = nil
-        shortTimerPublisher?.cancel()
-        shortTimerPublisher = nil
+        timerPublisher?.cancel()
+        timerPublisher = nil
         isTimerRunning = false
     }
     
     func moveToNextExercise() {
-        // Don't call stopTimers(), just pause temporarily
-        isTimerRunning = false
-        
         if currentExerciseIndex < exercises.count - 1 {
             currentExerciseIndex += 1
-            resetTimers()
-            // Resume the timers instead of recreating them
-            isTimerRunning = true
+            resetTimers() // Only reset the short timer
         } else {
-            // Finished all exercises
-            mainTimerPublisher?.cancel()
-            shortTimerPublisher?.cancel()
-            mainTimerPublisher = nil
-            shortTimerPublisher = nil
-            hasStarted = false
-            isPaused = false
-            showCompletionAlert = true
+            completeSession()
         }
     }
     
