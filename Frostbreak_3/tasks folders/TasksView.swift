@@ -11,6 +11,12 @@ struct ExerciseTimerView2: View {
     @State private var viewModel = ExerciseTimerViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var soundOn = true
+    @Binding var tabSelection: Int
+    
+    // For preview only
+    init(tabSelection: Binding<Int>? = nil) {
+        self._tabSelection = tabSelection ?? Binding.constant(0)
+    }
     
     var body: some View {
         ZStack {
@@ -42,6 +48,7 @@ struct ExerciseTimerView2: View {
         .alert("¡Ejercicios completados!", isPresented: $viewModel.showCompletionAlert) {
             Button("OK") {
                 dismiss()
+                tabSelection = 0 // Ensure we return to home tab
             }
         } message: {
             Text("Has completado todos los ejercicios de descanso visual y estiramientos.")

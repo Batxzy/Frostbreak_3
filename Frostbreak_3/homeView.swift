@@ -8,6 +8,13 @@
 import SwiftUI
 
 struct homeView: View {
+    @Binding var tabSelection: Int
+    
+    // For preview only
+    init(tabSelection: Binding<Int>? = nil) {
+        self._tabSelection = tabSelection ?? Binding.constant(0)
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -66,7 +73,7 @@ struct homeView: View {
                         )
                         
                         // Updated NavigationLink to point to ExerciseTimerView2
-                        NavigationLink(destination: ExerciseTimerView2()) {
+                        NavigationLink(destination: ExerciseTimerView2(tabSelection: $tabSelection)) {
                             VStack(alignment: .center, spacing: 12) {
                                 Text("Descanzar")
                                     .font(.title3).fontWeight(.bold)
@@ -109,6 +116,41 @@ struct homeView: View {
             .navigationBarHidden(true)
         }
         .navigationViewStyle(StackNavigationViewStyle())
+    }
+}
+
+struct MainTabView: View {
+    @State private var selectedTab: Int = 0
+    
+    init() {
+        // Your existing tab bar appearance code
+        let tabBarAppearance = UITabBarAppearance()
+        // ...rest of init remains the same
+    }
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            // First Tab
+            homeView(tabSelection: $selectedTab)
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+                .tag(0)
+            
+            // Second Tab
+            ExercizeView()
+                .tabItem {
+                    Label("Explore", systemImage: "waveform.path.ecg")
+                }
+                .tag(1)
+            
+            // Third Tab
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.fill")
+                }
+                .tag(2)
+        }
     }
 }
 
