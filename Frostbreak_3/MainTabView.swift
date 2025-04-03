@@ -57,11 +57,14 @@ struct MainTabView: View {
 struct ProfileView: View {
     var body: some View {
         NavigationView {
-            VStack {
-                Text("Profile Screen")
-                    .font(.largeTitle)
+            ScrollView {
+                Image("frostme")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                    .ignoresSafeArea()
+                    .scrollDisabled(true)
             }
-            .navigationTitle("Profile")
         }
     }
 }
