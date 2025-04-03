@@ -6,8 +6,9 @@
 //
 import SwiftUI
 
+
 struct ExerciseTimerView2: View {
-    @StateObject private var viewModel = ExerciseTimerViewModel()
+    @State private var viewModel = ExerciseTimerViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var soundOn = true
     
@@ -45,6 +46,7 @@ struct ExerciseTimerView2: View {
         } message: {
             Text("Has completado todos los ejercicios de descanso visual y estiramientos.")
         }
+        .onAppear(perform: viewModel.startTimers)
     }
 }
 

@@ -8,20 +8,21 @@
 import Foundation
 import SwiftUI
 import Combine
+import Observation
 
-class ExerciseTimerViewModel: ObservableObject {
-    @Published var exercises: [ExerciseTask] = []
-    @Published var currentExerciseIndex: Int = 0
-    @Published var mainTimeRemaining: Int = 0
-    @Published var shortTimeRemaining: Int = 0
-    @Published var isTimerRunning: Bool = false
-    @Published var isPaused: Bool = false
-    @Published var hasStarted: Bool = false
-    @Published var showCompletionAlert: Bool = false
+@Observable
+class ExerciseTimerViewModel {
+    var exercises: [ExerciseTask] = []
+    var currentExerciseIndex: Int = 0
+    var mainTimeRemaining: Int = 0
+    var shortTimeRemaining: Int = 0
+    var isTimerRunning: Bool = false
+    var isPaused: Bool = false
+    var hasStarted: Bool = false
+    var showCompletionAlert: Bool = false
     
-    private var mainTimer: Timer?
-    private var shortTimer: Timer?
-    private var cancellables = Set<AnyCancellable>()
+    private var mainTimerPublisher: AnyCancellable?
+    private var shortTimerPublisher: AnyCancellable?
     
     init() {
         setupExercises()
@@ -54,64 +55,49 @@ class ExerciseTimerViewModel: ObservableObject {
         hasStarted = true
         isPaused = false
         
-        // Main timer for the exercise
-        mainTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, self.mainTimeRemaining > 0 else {
-                self?.moveToNextExercise()
-                return
+        // Using DispatchQueue for better UI updates
+        mainTimerPublisher = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                
+                if self.mainTimeRemaining > 0 {
+                    self.mainTimeRemaining -= 1
+                } else {
+                    self.moveToNextExercise()
+                }
             }
-            self.mainTimeRemaining -= 1
-        }
         
-        // 1-minute timer
-        shortTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, self.shortTimeRemaining > 0 else {
-                // When the short timer ends, we don't move to next exercise yet
-                self?.shortTimeRemaining = 0
-                return
+        shortTimerPublisher = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                
+                if self.shortTimeRemaining > 0 {
+                    self.shortTimeRemaining -= 1
+                }
             }
-            self.shortTimeRemaining -= 1
-        }
     }
     
     func pauseTimers() {
         stopTimers()
         isPaused = true
         isTimerRunning = false
-        // Don't reset hasStarted when pausing
     }
     
     func resumeTimers() {
         if isPaused {
-            isTimerRunning = true
-            isPaused = false
-            
-            // Main timer for the exercise
-            mainTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard let self = self, self.mainTimeRemaining > 0 else {
-                    self?.moveToNextExercise()
-                    return
-                }
-                self.mainTimeRemaining -= 1
-            }
-            
-            // 1-minute timer
-            shortTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard let self = self, self.shortTimeRemaining > 0 else {
-                    // When the short timer ends, we don't move to next exercise yet
-                    self?.shortTimeRemaining = 0
-                    return
-                }
-                self.shortTimeRemaining -= 1
-            }
+            startTimers()
         }
     }
     
     func stopTimers() {
-        mainTimer?.invalidate()
-        mainTimer = nil
-        shortTimer?.invalidate()
-        shortTimer = nil
+        mainTimerPublisher?.cancel()
+        mainTimerPublisher = nil
+        shortTimerPublisher?.cancel()
+        shortTimerPublisher = nil
         isTimerRunning = false
     }
     

@@ -32,15 +32,13 @@ struct homeView: View {
                                 Image("Noti")
                                     .shadow(color: Color(red: 0, green: 0.68, blue: 0.7).opacity(0.4), radius: 8.0, x: 0, y: 4)
                             }
-                            .frame(width: .infinity)
                             
                             Rectangle()
                                 .foregroundColor(.clear)
-                                .frame(width: .infinity, height: 2)
+                                .frame(height: 2)
                                 .background(.white.opacity(0.4))
                         }
                         .padding(.horizontal, 24)
-                        .frame(width:.infinity)
                         
                         Image("Iceberg")
                     }
@@ -67,7 +65,8 @@ struct homeView: View {
                                 ).opacity(0.49), lineWidth: 2)
                         )
                         
-                        NavigationLink(destination: ExerciseTimerView()) {
+                        // Updated NavigationLink to point to ExerciseTimerView2
+                        NavigationLink(destination: ExerciseTimerView2()) {
                             VStack(alignment: .center, spacing: 12) {
                                 Text("Descanzar")
                                     .font(.title3).fontWeight(.bold)

@@ -11,6 +11,8 @@ import SwiftUI
 struct Frostbreak_1App: App {
     var body: some Scene {
         WindowGroup {
+            MainTabView()
+                .preferredColorScheme(.dark)
         }
     }
 }
