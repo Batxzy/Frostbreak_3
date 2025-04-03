@@ -15,6 +15,8 @@ class ExerciseTimerViewModel: ObservableObject {
     @Published var mainTimeRemaining: Int = 0
     @Published var shortTimeRemaining: Int = 0
     @Published var isTimerRunning: Bool = false
+    @Published var isPaused: Bool = false
+    @Published var hasStarted: Bool = false
     @Published var showCompletionAlert: Bool = false
     
     private var mainTimer: Timer?
@@ -49,6 +51,8 @@ class ExerciseTimerViewModel: ObservableObject {
     func startTimers() {
         stopTimers()
         isTimerRunning = true
+        hasStarted = true
+        isPaused = false
         
         // Main timer for the exercise
         mainTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -70,6 +74,39 @@ class ExerciseTimerViewModel: ObservableObject {
         }
     }
     
+    func pauseTimers() {
+        stopTimers()
+        isPaused = true
+        isTimerRunning = false
+        // Don't reset hasStarted when pausing
+    }
+    
+    func resumeTimers() {
+        if isPaused {
+            isTimerRunning = true
+            isPaused = false
+            
+            // Main timer for the exercise
+            mainTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self = self, self.mainTimeRemaining > 0 else {
+                    self?.moveToNextExercise()
+                    return
+                }
+                self.mainTimeRemaining -= 1
+            }
+            
+            // 1-minute timer
+            shortTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                guard let self = self, self.shortTimeRemaining > 0 else {
+                    // When the short timer ends, we don't move to next exercise yet
+                    self?.shortTimeRemaining = 0
+                    return
+                }
+                self.shortTimeRemaining -= 1
+            }
+        }
+    }
+    
     func stopTimers() {
         mainTimer?.invalidate()
         mainTimer = nil
@@ -88,6 +125,8 @@ class ExerciseTimerViewModel: ObservableObject {
         } else {
             // Finished all exercises
             isTimerRunning = false
+            hasStarted = false
+            isPaused = false
             showCompletionAlert = true
         }
     }
