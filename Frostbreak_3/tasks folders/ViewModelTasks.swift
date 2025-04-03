@@ -102,15 +102,20 @@ class ExerciseTimerViewModel {
     }
     
     func moveToNextExercise() {
-        stopTimers()
+        // Don't call stopTimers(), just pause temporarily
+        isTimerRunning = false
         
         if currentExerciseIndex < exercises.count - 1 {
             currentExerciseIndex += 1
             resetTimers()
-            startTimers()
+            // Resume the timers instead of recreating them
+            isTimerRunning = true
         } else {
             // Finished all exercises
-            isTimerRunning = false
+            mainTimerPublisher?.cancel()
+            shortTimerPublisher?.cancel()
+            mainTimerPublisher = nil
+            shortTimerPublisher = nil
             hasStarted = false
             isPaused = false
             showCompletionAlert = true
